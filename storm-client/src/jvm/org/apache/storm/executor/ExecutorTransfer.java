@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.storm.Config;
+import org.apache.storm.daemon.worker.TaskToExecutorGrouper;
 import org.apache.storm.daemon.worker.WorkerState;
 import org.apache.storm.serialization.KryoTupleSerializer;
 import org.apache.storm.task.WorkerTopologyContext;
@@ -28,6 +29,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // Every executor has an instance of this class
+/* 
+* Executor是Storm中正在执行任务的线程，Worker进程中会启动所有的Executor。每个Executor都调用execute方法，
+* 在Executor方法中的execute线程中。Executor线程 执行execute()方法后，不断的Loop调用executorTransfer的Callable接口。
+* 一旦sendQueue buffer达到一定的阈值后，就开始调用ExecutorTransfer的Call方法。
+ExecutorTransfer类是Executor类的一个成员变量，用来将发送Executor中的Task数据的。
+* 当Executor中的sendQueue buffer达到一定的阈值后，就开始调用ExecutorTransfer的Call方法。
+* Executor的batchTransferQueue批量的消费消息，也就是Executor的sendQueue被批量消费消息，不
+* 断的批量消费batchTransferQueue中的AddressedTuple对象，最后调用WorkerState的transfer方法，
+* 对AddressedTuple进行序列化操作，并且将数据发送到Worker的传输队列中去。
+*/
 public class ExecutorTransfer {
     private static final Logger LOG = LoggerFactory.getLogger(ExecutorTransfer.class);
 
@@ -90,7 +101,8 @@ public class ExecutorTransfer {
         if ((tuple.dest - indexingBase) >= localReceiveQueues.size()) {
             return null;
         }
-        return localReceiveQueues.get(tuple.dest - indexingBase);
+        return workerData.getLocalTargetQueue(tuple);
+        // return localReceiveQueues.get(tuple.dest - indexingBase);
     }
 
     /**

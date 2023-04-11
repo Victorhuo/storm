@@ -32,7 +32,8 @@ public class KryoTupleSerializer implements ITupleSerializer {
     @Override
     public byte[] serialize(Tuple tuple) {
         try {
-
+            // Storm 传输的消息为 SourceTaskId,StreamID,messageID,TupleValues:List.
+            // StreamID是对！组件中！的所有流排序后编号，
             kryoOut.clear();
             kryoOut.writeInt(tuple.getSourceTask(), true);
             kryoOut.writeInt(ids.getStreamId(tuple.getSourceComponent(), tuple.getSourceStreamId()), true);

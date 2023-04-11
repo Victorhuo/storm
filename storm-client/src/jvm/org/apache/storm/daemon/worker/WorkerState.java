@@ -89,16 +89,16 @@ public class WorkerState {
     private static final long LOAD_REFRESH_INTERVAL_MS = 5000L;
     private static final int RESEND_BACKPRESSURE_SIZE = 10000;
     private static long dropCount = 0;
-    final Map<String, Object> conf;
-    final IContext mqContext;
-    final IConnection receiver;
+    final Map<String, Object> conf; // 配置
+    final IContext mqContext; // zmq 运行上下文
+    final IConnection receiver; //
     final String topologyId;
-    final String assignmentId;
+    final String assignmentId; // supervisor id
     private final Supplier<SupervisorIfaceFactory> supervisorIfaceSupplier;
-    final int port;
-    final String workerId;
+    final int port; // work port
+    final String workerId; // wid
     final IStateStorage stateStorage;
-    final IStormClusterState stormClusterState;
+    final IStormClusterState stormClusterState; // cluster 中 topology 状态
     // when worker bootup, worker will start to setup initial connections to
     // other workers. When all connection is ready, we will count down this latch
     // and spout and bolt will be activated, assuming the topology is not deactivated.
@@ -110,13 +110,13 @@ public class WorkerState {
     final Set<List<Long>> localExecutors;
     final ArrayList<Integer> localTaskIds;
     // [taskId]-> JCQueue :  initialized after local executors are initialized
-    final Map<Integer, JCQueue> localReceiveQueues = new HashMap<>();
+    final Map<Integer, JCQueue> localReceiveQueues = new HashMap<>(); // 这个地方key直接是 taskID了?
     final Map<String, Object> topologyConf;
     final StormTopology topology;
     final StormTopology systemTopology;
-    final Map<Integer, String> taskToComponent;
-    final Map<String, Map<String, Fields>> componentToStreamToFields;
-    final Map<String, List<Integer>> componentToSortedTasks;
+    final Map<Integer, String> taskToComponent; // taskID  comID
+    final Map<String, Map<String, Fields>> componentToStreamToFields; // fileds 是什么？
+    final Map<String, List<Integer>> componentToSortedTasks; // com - > taskID
     final ConcurrentMap<String, Long> blobToLastKnownVersion;
     final ReentrantReadWriteLock endpointSocketLock;
     final AtomicReference<Map<Integer, NodeInfo>> cachedTaskToNodePort;
@@ -124,12 +124,12 @@ public class WorkerState {
     final AtomicReference<Map<String, String>> cachedNodeToHost;
     final AtomicReference<Map<NodeInfo, IConnection>> cachedNodeToPortSocket;
     // executor id is in form [start_task_id end_task_id]
-    final Map<List<Long>, JCQueue> executorReceiveQueueMap;
+    final Map<List<Long>, JCQueue> executorReceiveQueueMap; // 每个 executor 对应一个队列
     final Map<Integer, JCQueue> taskToExecutorQueue;
     final Runnable suicideCallback;
     final Utils.UptimeComputer uptime;
     final Map<String, Object> defaultSharedResources;
-    final Map<String, Object> userSharedResources;
+    final Map<String, Object> userSharedResources; // 用户资源
     final LoadMapping loadMapping;
     final AtomicReference<Map<String, VersionedData<Assignment>>> assignmentVersions;
     // Timers
@@ -156,6 +156,8 @@ public class WorkerState {
     private final StormMetricRegistry metricRegistry;
 
     private final SharedCache sharedState = new SharedCache();
+    final Map<String, TaskToExecutorGrouper> componentToExecutorGrouper = new HashMap<>();
+
 
     public WorkerState(Map<String, Object> conf,
             IContext mqContext,
@@ -565,12 +567,31 @@ public class WorkerState {
         return workerTransfer.tryFlushRemotes();
     }
 
+    public JCQueue getLocalTargetQueue(AddressedTuple tuple) {
+        String component = taskToComponent.get(tuple.dest);
+        if (component == null) {
+            LOG.warn("tuple: {} can't find component", tuple);
+        }
+        TaskToExecutorGrouper grouper = componentToExecutorGrouper.get(component);
+        if (grouper == null) {
+            LOG.warn("tuple: {} component {} can't find grouper", tuple, component);
+            return taskToExecutorQueue.get(tuple.dest);
+        }
+        Integer targetTask = grouper.chooseTasks(tuple.tuple.getValues());
+        LOG.info("Received tuple:tuple {}, and send to taskID: {}", tuple, targetTask);
+        return taskToExecutorQueue.get(targetTask);
+    }
+
     // Receives msgs from remote workers and feeds them to local executors. If any receiving local executor is under Back Pressure,
     // informs other workers about back pressure situation. Runs in the NettyWorker thread.
-    private void transferLocalBatch(ArrayList<AddressedTuple> tupleBatch) {
+    // TODO: 2023/4/6   修改, executor 分发函数修改为 taskID -> ComID ->  taskIDs
+
+    private void transferLocalBatch(ArrayList<AddressedTuple> tupleBatch) { //  参数为带有 taskID 的 Tuple
         for (int i = 0; i < tupleBatch.size(); i++) {
             AddressedTuple tuple = tupleBatch.get(i);
-            JCQueue queue = taskToExecutorQueue.get(tuple.dest);
+
+            JCQueue queue = getLocalTargetQueue(tuple);
+            // JCQueue queue = taskToExecutorQueue.get(tuple.dest); // 根据 taskID 得到 queue
 
             // 1- try adding to main queue if its overflow is not empty
             if (queue.isEmptyOverflow()) {
@@ -583,6 +604,7 @@ public class WorkerState {
             int currOverflowCount = queue.getOverflowCount();
             // get BP state object so only have to lookup once
             BackpressureState bpState = bpTracker.getBackpressureState(tuple.dest);
+            // 这几行代码干什么的？还有 tryPublishToOverFlow 是加入到备份队列里吗？
             if (bpTracker.recordBackPressure(bpState)) {
                 receiver.sendBackPressureStatus(bpTracker.getCurrStatus());
                 bpTracker.setLastOverflowCount(bpState, currOverflowCount);

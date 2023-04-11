@@ -22,6 +22,8 @@ import org.apache.storm.utils.Utils;
  * This output collector exposes the API for emitting tuples from an IRichBolt. This is the core API for emitting tuples. For a simpler API,
  * and a more restricted form of stream processing, see IBasicBolt and BasicOutputCollector.
  */
+// 发出元组的核心 api ,从 IRIchBolt
+// 没懂参数意思，感觉应该不用看。直接发射是啥意思也没懂
 public class OutputCollector implements IOutputCollector {
     private IOutputCollector delegate;
 

@@ -23,13 +23,14 @@ import org.apache.storm.daemon.worker.SharedCache;
 import org.apache.storm.generated.NodeInfo;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.tuple.Fields;
+//Worker 的上下文，即Executor的共享环境。
 
 public class WorkerTopologyContext extends GeneralTopologyContext {
     public static final String SHARED_EXECUTOR = "executor";
-    Map<String, Object> userResources;
-    Map<String, Object> defaultResources;
+    Map<String, Object> userResources; // Executor共享资源
+    Map<String, Object> defaultResources; // 里边有个线程池？ 可以用 getShairedExecutor来使用
     private Integer workerPort;
-    private List<Integer> workerTasks;
+    private List<Integer> workerTasks; //该Worker上的Task集合
     private String codeDir;
     private String pidDir;
     private AtomicReference<Map<Integer, NodeInfo>> taskToNodePort;

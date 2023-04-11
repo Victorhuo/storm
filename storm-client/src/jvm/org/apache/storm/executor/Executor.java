@@ -90,36 +90,36 @@ public abstract class Executor implements Callable, JCQueue.Consumer {
 
     private static final Logger LOG = LoggerFactory.getLogger(Executor.class);
 
-    protected final WorkerState workerData;
+    protected final WorkerState workerData; // 所在的 worker 的 workerstate 的引用
     protected final WorkerTopologyContext workerTopologyContext;
-    protected final List<Long> executorId;
-    protected final List<Integer> taskIds;
-    protected final String componentId;
-    protected final AtomicBoolean openOrPrepareWasCalled;
-    protected final Map<String, Object> topoConf;
-    protected final Map<String, Object> conf;
-    protected final String stormId;
-    protected final HashMap sharedExecutorData;
+    protected final List<Long> executorId; // 含有两个元素的数组[start,last]，标识了Excutor的任务区间
+    protected final List<Integer> taskIds; //该Executor对应的 taskid 数组
+    protected final String componentId; // Com id ，这个地方为什么不是数组？
+    protected final AtomicBoolean openOrPrepareWasCalled; //open和Prepare方法是否被调用
+    protected final Map<String, Object> topoConf; //topology 的配置
+    protected final Map<String, Object> conf; //自己的配置？
+    protected final String stormId; // 从worker中取得的 id
+    protected final HashMap sharedExecutorData; //一个 executor中所有的task共享数据
     protected final CountDownLatch workerReady;
     protected final AtomicBoolean stormActive;
     protected final AtomicReference<Map<String, DebugOptions>> stormComponentDebug;
-    protected final Runnable suicideFn;
-    protected final IStormClusterState stormClusterState;
-    protected final Map<Integer, String> taskToComponent;
-    protected final Map<Integer, Map<Integer, Map<String, IMetric>>> intervalToTaskToMetricToRegistry;
-    protected final Map<String, Map<String, LoadAwareCustomStreamGrouping>> streamToComponentToGrouper;
+    protected final Runnable suicideFn; // 异常处理函数
+    protected final IStormClusterState stormClusterState; //storm运行状态
+    protected final Map<Integer, String> taskToComponent; // task to com，从worker获得
+    protected final Map<Integer, Map<Integer, Map<String, IMetric>>> intervalToTaskToMetricToRegistry; // 系统内置统计运行信息。这个是干啥的？
+    protected final Map<String, Map<String, LoadAwareCustomStreamGrouping>> streamToComponentToGrouper; //从流到接受组件及分组函数的哈希表
     protected final List<LoadAwareCustomStreamGrouping> groupers;
-    protected final ReportErrorAndDie reportErrorDie;
-    protected final BooleanSupplier sampler;
+    protected final ReportErrorAndDie reportErrorDie; // 报告错误并退出
+    protected final BooleanSupplier sampler; //统计运行采样器
     protected final String type;
     protected final IReportError reportError;
     protected final Random rand;
-    protected final JCQueue receiveQueue;
-    protected final Map<String, String> credentials;
+    protected final JCQueue receiveQueue; // 从 worker 中得到的接受队列
+    protected final Map<String, String> credentials;  //
     protected final Boolean isDebug;
     protected final Boolean hasEventLoggers;
     protected final boolean ackingEnabled;
-    protected final MpscChunkedArrayQueue<AddressedTuple> pendingEmits = new MpscChunkedArrayQueue<>(1024, (int) Math.pow(2, 30));
+    protected final MpscChunkedArrayQueue<AddressedTuple> pendingEmits = new MpscChunkedArrayQueue<>(1024, (int) Math.pow(2, 30)); //还在排队输出
     private final AddressedTuple flushTuple;
     protected ExecutorTransfer executorTransfer;
     protected ArrayList<Task> idToTask;
@@ -242,6 +242,7 @@ public abstract class Executor implements Callable, JCQueue.Consumer {
      *
      * @throws ClassCastException if one of the fields is not of type {@code String}
      */
+    // 检索设置的
     private static List<String> retrieveAllConfigKeys() {
         List<String> ret = new ArrayList<>();
         Field[] fields = Config.class.getFields();
@@ -279,7 +280,7 @@ public abstract class Executor implements Callable, JCQueue.Consumer {
     public abstract void tupleActionFn(int taskId, TupleImpl tuple) throws Exception;
 
     @Override
-    public void accept(Object event) {
+    public void accept(Object event) { //event 就是收到的元组
         AddressedTuple addressedTuple = (AddressedTuple) event;
         int taskId = addressedTuple.getDest();
 
@@ -292,7 +293,7 @@ public abstract class Executor implements Callable, JCQueue.Consumer {
             if (taskId != AddressedTuple.BROADCAST_DEST) {
                 tupleActionFn(taskId, tuple);
             } else {
-                for (Integer t : taskIds) {
+                for (Integer t : taskIds) { // 是广播，则让所有task都执行
                     tupleActionFn(t, tuple);
                 }
             }

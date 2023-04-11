@@ -106,13 +106,17 @@ public class SpoutOutputCollectorImpl implements ISpoutOutputCollector {
         executor.getReportError().report(error);
     }
 
+    // 根据emit方法中指定的stream和values，调用taskData的taskData.getOutgoingTasks(stream, values)的方法，
+    // 获取数据要发往哪个TaskID（根据上游spout和下游bolt之间的分组信息）。然后根据这个TaskID，循环遍历将数据封装成TupleImpl。
+    // 然后outputCollector通过调用executor的ExecutorTransfer类的transfer方法(）
+    // 将数据发送到相应的目标Task
     private List<Integer> sendSpoutMsg(String stream, List<Object> values, Object messageId, Integer outTaskId) throws
         InterruptedException {
-        emittedCount.increment();
+        emittedCount.increment(); // 发送数据 val++
 
         List<Integer> outTasks;
         if (outTaskId != null) {
-            outTasks = taskData.getOutgoingTasks(outTaskId, stream, values);
+            outTasks = taskData.getOutgoingTasks(outTaskId, stream, values);  // 本地
         } else {
             outTasks = taskData.getOutgoingTasks(stream, values);
         }
@@ -123,7 +127,7 @@ public class SpoutOutputCollectorImpl implements ISpoutOutputCollector {
 
         final long rootId = needAck ? MessageId.generateId(random) : 0;
 
-        for (int i = 0; i < outTasks.size(); i++) { // perf critical path. don't use iterators.
+        for (int i = 0; i < outTasks.size(); i++) { // perf critical path. don't use iterators. outTasks 中的每个 Task 都要发
             Integer t = outTasks.get(i);
             MessageId msgId;
             if (needAck) {
@@ -136,8 +140,8 @@ public class SpoutOutputCollectorImpl implements ISpoutOutputCollector {
 
             final TupleImpl tuple =
                 new TupleImpl(executor.getWorkerTopologyContext(), values, executor.getComponentId(), this.taskId, stream, msgId);
-            AddressedTuple adrTuple = new AddressedTuple(t, tuple);
-            executor.getExecutorTransfer().tryTransfer(adrTuple, executor.getPendingEmits());
+            AddressedTuple adrTuple = new AddressedTuple(t, tuple);  //将tuple添加目标taskID信息
+            executor.getExecutorTransfer().tryTransfer(adrTuple, executor.getPendingEmits()); // tryTransfer方法，发送
         }
         if (isEventLoggers) {
             taskData.sendToEventLogger(executor, values, executor.getComponentId(), messageId, random, executor.getPendingEmits());

@@ -78,14 +78,14 @@ public class Worker implements Shutdownable, DaemonCommon {
 
     private static final Logger LOG = LoggerFactory.getLogger(Worker.class);
     private static final Pattern BLOB_VERSION_EXTRACTION = Pattern.compile(".*\\.([0-9]+)$");
-    private final Map<String, Object> conf;
+    private final Map<String, Object> conf; // 配置项
     private final Map<String, Object> topologyConf;
     private final IContext context;
     private final String topologyId;
     private final String assignmentId;
     private final int supervisorPort;
     private final int port;
-    private final String workerId;
+    private final String workerId; //wid
     private final LogConfigManager logConfigManager;
     private final StormMetricRegistry metricRegistry;
     private Meter heatbeatMeter;
@@ -177,11 +177,11 @@ public class Worker implements Shutdownable, DaemonCommon {
         // because in local mode, its not a separate
         // process. supervisor will register it in this case
         // if ConfigUtils.isLocalMode(conf) returns false then it is in distributed mode.
-        if (!ConfigUtils.isLocalMode(conf)) {
+        if (!ConfigUtils.isLocalMode(conf)) { // 如果是分布式的，则记录一些参数
             // Distributed mode
-            SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
-            String pid = Utils.processPid();
-            FileUtils.touch(new File(ConfigUtils.workerPidPath(conf, workerId, pid)));
+            SysOutOverSLF4J.sendSystemOutAndErrToSLF4J(); // 将标准输出/错误 重定向
+            String pid = Utils.processPid(); // 获得 pid
+            FileUtils.touch(new File(ConfigUtils.workerPidPath(conf, workerId, pid))); // 创建 pid 文件
             FileUtils.writeStringToFile(new File(ConfigUtils.workerArtifactsPidPath(conf, topologyId, port)), pid,
                                         Charset.forName("UTF-8"));
         }
@@ -199,7 +199,7 @@ public class Worker implements Shutdownable, DaemonCommon {
             initCreds.putAll(initialCredentials.get_creds());
         }
         autoCreds = ClientAuthUtils.getAutoCredentials(topologyConf);
-        subject = ClientAuthUtils.populateSubject(null, autoCreds, initCreds);
+        subject = ClientAuthUtils.populateSubject(null, autoCreds, initCreds); // 利用 autoCreds 填充subject，表示经过身份验证的用户或服务
 
         Subject.doAs(subject, (PrivilegedExceptionAction<Object>)
             () -> loadWorker(stateStorage, stormClusterState, initCreds, initialCredentials)
@@ -251,7 +251,7 @@ public class Worker implements Shutdownable, DaemonCommon {
         workerState.runWorkerStartHooks();
 
         List<Executor> execs = new ArrayList<>();
-        for (List<Long> e : workerState.getLocalExecutors()) {
+        for (List<Long> e : workerState.getLocalExecutors()) { // 初始化的时候已经得到了所有 excutorID 了
             if (ConfigUtils.isLocalMode(conf)) {
                 Executor executor = LocalExecutor.mkExecutor(workerState, e, initCreds);
                 execs.add(executor);
@@ -259,8 +259,12 @@ public class Worker implements Shutdownable, DaemonCommon {
                     workerState.localReceiveQueues.put(executor.getTaskIds().get(i), executor.getReceiveQueue());
                 }
             } else {
-                Executor executor = Executor.mkExecutor(workerState, e, initCreds);
+                Executor executor = Executor.mkExecutor(workerState, e, initCreds); //
                 for (int i = 0; i < executor.getTaskIds().size(); ++i) {
+                    /*TODO: 2023/4/6  每个executor的接受队列在workerstate中注册
+                       一个 executor中的所有 taskID 都对应同一个队列，但是多次注册。
+                       可以对每一个com都设置一个 hash 表，key为 comID ，val 为对应的接受队列数组引用。作为 worker 的成员变量。
+                    * */
                     workerState.localReceiveQueues.put(executor.getTaskIds().get(i), executor.getReceiveQueue());
                 }
                 execs.add(executor);
@@ -334,10 +338,26 @@ public class Worker implements Shutdownable, DaemonCommon {
 
         setupFlushTupleTimer(topologyConf, newExecutors);
         setupBackPressureCheckTimer(topologyConf);
-
+        initComponentToExecutorGrouper();
         LOG.info("Worker has topology config {}", ConfigUtils.maskPasswords(topologyConf));
         LOG.info("Worker {} for storm {} on {}:{}  has finished loading", workerId, topologyId, assignmentId, port);
+        LOG.info("Worker's info executors: {} tasks:{} taskToComponent: {}",
+                workerState.localExecutors, workerState.localTaskIds, workerState.taskToComponent);
+
+        LOG.info("Worker's keyby method: {}", workerState.componentToExecutorGrouper);
         return this;
+    }
+
+    public void initComponentToExecutorGrouper() {
+        for (Map.Entry<String, List<Integer>> entry : workerState.componentToSortedTasks.entrySet()) {
+            List<Integer> localTaskList = new ArrayList<>();
+            for(Integer i:entry.getValue()) {
+                if(workerState.localTaskIds.contains(i)) {
+                    localTaskList.add(i);
+                }
+            }
+            workerState.componentToExecutorGrouper.put(entry.getKey(), new TaskToExecutorGrouper(localTaskList));
+        }
     }
 
     private void setupFlushTupleTimer(final Map<String, Object> topologyConf, final List<IRunningExecutor> executors) {

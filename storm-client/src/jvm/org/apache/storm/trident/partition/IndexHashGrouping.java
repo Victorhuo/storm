@@ -18,6 +18,7 @@ import org.apache.storm.generated.GlobalStreamId;
 import org.apache.storm.grouping.CustomStreamGrouping;
 import org.apache.storm.task.WorkerTopologyContext;
 import org.apache.storm.utils.Utils;
+// 根据 key 进行分组
 
 public class IndexHashGrouping implements CustomStreamGrouping {
     int index;

@@ -151,7 +151,7 @@ public class Task {
         }
 
         ArrayList<Integer> outTasks = new ArrayList<>();
-
+        // 根据streamID获取了taskIDs, 感觉可以学一下，再将 taskID 转成 taskID 时有用
         ArrayList<LoadAwareCustomStreamGrouping> groupers = streamToGroupers.get(stream);
         if (null != groupers) {
             for (int i = 0; i < groupers.size(); ++i) {
@@ -159,7 +159,7 @@ public class Task {
                 if (grouper == GrouperFactory.DIRECT) {
                     throw new IllegalArgumentException("Cannot do regular emit to direct stream");
                 }
-                List<Integer> compTasks = grouper.chooseTasks(taskId, values);
+                List<Integer> compTasks = grouper.chooseTasks(taskId, values); // chooseTasks 函数，storm 提供多种具体实现
                 outTasks.addAll(compTasks);
             }
         } else {

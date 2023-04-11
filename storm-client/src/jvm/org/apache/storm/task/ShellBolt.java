@@ -67,6 +67,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>public void declareOutputFields(OutputFieldsDeclarer declarer) { declarer.declare(new Fields("field1", "field2")); } } ```
  */
+
+// 这个感觉是用来拓展的，交给另一个进程处理元组，有一些具体子类实现。先不看了
 public class ShellBolt implements IBolt {
     public static final String HEARTBEAT_STREAM_ID = "__heartbeat";
     public static final Logger LOG = LoggerFactory.getLogger(ShellBolt.class);

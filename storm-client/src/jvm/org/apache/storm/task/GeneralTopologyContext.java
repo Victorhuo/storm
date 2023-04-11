@@ -41,9 +41,9 @@ public class GeneralTopologyContext implements JSONAware {
     protected Map<String, Object> topoConf;
     protected boolean doSanityCheck;
     private StormTopology topology;
-    private Map<Integer, String> taskToComponent;
-    private Map<String, List<Integer>> componentToTasks;
-    private Map<String, Map<String, Fields>> componentToStreamToFields;
+    private Map<Integer, String> taskToComponent; // taskID to ComID ,  看一下这两个变量怎么搞出来的， taskToComponent()，搞一个com->queue的队列
+    private Map<String, List<Integer>> componentToTasks; // ComID to  taskIDs
+    private Map<String, Map<String, Fields>> componentToStreamToFields; // ComID to Flids,其中 Filds 是每个输出流对应的模式
     private String stormId;
 
     // pass in componentToSortedTasks for the case of running tons of tasks in single executor
@@ -102,7 +102,7 @@ public class GeneralTopologyContext implements JSONAware {
     /**
      * Gets the task ids allocated for the given component id. The task ids are always returned in ascending order.
      */
-    public List<Integer> getComponentTasks(String componentId) {
+    public List<Integer> getComponentTasks(String componentId) { // 根据ComId获得所有 其TaskId的集合 这个是一个Worker内吗？
         List<Integer> ret = componentToTasks.get(componentId);
         if (ret == null) {
             return new ArrayList<>();
@@ -134,7 +134,7 @@ public class GeneralTopologyContext implements JSONAware {
      *
      * @return A map from subscribed component/stream to the grouping subscribed with.
      */
-    public Map<GlobalStreamId, Grouping> getSources(String componentId) {
+    public Map<GlobalStreamId, Grouping> getSources(String componentId) { //获得一个Com的输入 ，下一个是输出
         return getComponentCommon(componentId).get_inputs();
     }
 

@@ -9,6 +9,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
  * and limitations under the License.
  */
+/* task 的上下文环境 */
 
 package org.apache.storm.task;
 
@@ -52,7 +53,7 @@ public class TopologyContext extends WorkerTopologyContext implements IMetricsCo
     private final Integer taskId;
     private final Map<String, Object> taskData = new HashMap<>();
     private final List<ITaskHook> hooks = new ArrayList<>();
-    private final Map<String, Object> executorData;
+    private final Map<String, Object> executorData; // 同一 Executor 的task 共享的数据
     private final Map<Integer, Map<Integer, Map<String, IMetric>>> registeredMetrics;
     private final AtomicBoolean openOrPrepareWasCalled;
     private final StormMetricRegistry metricRegistry;
@@ -197,7 +198,7 @@ public class TopologyContext extends WorkerTopologyContext implements IMetricsCo
      * Gets the index of this task id in getComponentTasks(getThisComponentId()). An example use case for this method is determining which
      * task accesses which resource in a distributed resource to ensure an even distribution.
      */
-    public int getThisTaskIndex() {
+    public int getThisTaskIndex() { //获取tasKId的索引
         List<Integer> tasks = new ArrayList<>(getComponentTasks(getThisComponentId()));
         Collections.sort(tasks);
         for (int i = 0; i < tasks.size(); i++) {
@@ -262,7 +263,7 @@ public class TopologyContext extends WorkerTopologyContext implements IMetricsCo
 
     public Object getExecutorData(String name) {
         return executorData.get(name);
-    }
+    } //获取共享数据
 
     public void addTaskHook(ITaskHook hook) {
         hook.prepare(topoConf, this);
