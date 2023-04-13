@@ -102,7 +102,7 @@ public class GeneralTopologyContext implements JSONAware {
     /**
      * Gets the task ids allocated for the given component id. The task ids are always returned in ascending order.
      */
-    public List<Integer> getComponentTasks(String componentId) { // 根据ComId获得所有 其TaskId的集合 这个是一个Worker内吗？
+    public List<Integer> getComponentTasks(String componentId) { // 根据ComId获得所有 其TaskId的集合
         List<Integer> ret = componentToTasks.get(componentId);
         if (ret == null) {
             return new ArrayList<>();

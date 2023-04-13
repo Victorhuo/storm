@@ -187,7 +187,7 @@ public class WorkerState {
         this.stateStorage = stateStorage;
         this.stormClusterState = stormClusterState;
         this.localExecutors =
-            new HashSet<>(readWorkerExecutors(assignmentId, port, getLocalAssignment(this.stormClusterState, topologyId)));
+            new HashSet<>(readWorkerExecutors(assignmentId, port, getLocalAssignment(this.stormClusterState, topologyId))); // 在这初始化 executors
         this.isWorkerActive = new CountDownLatch(1);
         this.isTopologyActive = new AtomicBoolean(false);
         this.stormComponentToDebug = new AtomicReference<>();
