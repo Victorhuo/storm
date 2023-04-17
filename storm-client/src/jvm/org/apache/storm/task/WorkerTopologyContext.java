@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.storm.daemon.worker.SharedCache;
 import org.apache.storm.generated.NodeInfo;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.tuple.Fields;
@@ -34,6 +36,8 @@ public class WorkerTopologyContext extends GeneralTopologyContext {
     private String assignmentId;
     private final AtomicReference<Map<String, String>> nodeToHost;
 
+    private SharedCache sharedState;
+
     public WorkerTopologyContext(
         StormTopology topology,
         Map<String, Object> topoConf,
@@ -49,7 +53,8 @@ public class WorkerTopologyContext extends GeneralTopologyContext {
         Map<String, Object> userResources,
         AtomicReference<Map<Integer, NodeInfo>> taskToNodePort,
         String assignmentId,
-        AtomicReference<Map<String, String>> nodeToHost
+        AtomicReference<Map<String, String>> nodeToHost,
+        SharedCache sharedState
     ) {
         super(topology, topoConf, taskToComponent, componentToSortedTasks, componentToStreamToFields, stormId);
         this.codeDir = codeDir;
@@ -69,6 +74,7 @@ public class WorkerTopologyContext extends GeneralTopologyContext {
         this.taskToNodePort = taskToNodePort;
         this.assignmentId = assignmentId;
         this.nodeToHost = nodeToHost;
+        this.sharedState = sharedState;
 
     }
 
@@ -86,7 +92,7 @@ public class WorkerTopologyContext extends GeneralTopologyContext {
         Map<String, Object> defaultResources,
         Map<String, Object> userResources) {
         this(topology, topoConf, taskToComponent, componentToSortedTasks, componentToStreamToFields, stormId,
-             codeDir, pidDir, workerPort, workerTasks, defaultResources, userResources, null, null, null);
+             codeDir, pidDir, workerPort, workerTasks, defaultResources, userResources, null, null, null, null);
     }
 
     /**
@@ -144,5 +150,9 @@ public class WorkerTopologyContext extends GeneralTopologyContext {
 
     public ExecutorService getSharedExecutor() {
         return (ExecutorService) defaultResources.get(SHARED_EXECUTOR);
+    }
+
+    public SharedCache getSharedState() {
+        return sharedState;
     }
 }

@@ -14,10 +14,13 @@ package org.apache.storm.starter;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.spout.ShellSpout;
 import org.apache.storm.task.ShellBolt;
+import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.BasicOutputCollector;
 import org.apache.storm.topology.IRichBolt;
 import org.apache.storm.topology.IRichSpout;
@@ -27,10 +30,13 @@ import org.apache.storm.topology.base.BaseBasicBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This topology demonstrates Storm's stream groupings and multilang capabilities.
  */
+
 public class WordCountTopologyNode {
     public static void main(String[] args) throws Exception {
 
@@ -86,23 +92,40 @@ public class WordCountTopologyNode {
     }
 
     public static class WordCount extends BaseBasicBolt {
-        Map<String, Integer> counts = new HashMap<String, Integer>();
+
+        private ConcurrentHashMap<String, Object> sharedState;
+
+        private Integer taskId;
+
+        private static final Logger LOG = LoggerFactory.getLogger(WordCountTopologyNode.class);
 
         @Override
         public void execute(Tuple tuple, BasicOutputCollector collector) {
             String word = tuple.getString(0);
-            Integer count = counts.get(word);
-            if (count == null) {
-                count = 0;
-            }
-            count++;
-            counts.put(word, count);
-            collector.emit(new Values(word, count));
+            Integer value = (Integer) sharedState.compute(word, (k, v) -> {
+                if (v == null) {
+                    return 1;
+                } else {
+                    return (Integer) v + 1;
+                }
+            });
+            LOG.info("taskID : {} get value of {} : {}", taskId, tuple, value);
+
+            collector.emit(new Values(word, value));
         }
 
         @Override
         public void declareOutputFields(OutputFieldsDeclarer declarer) {
             declarer.declare(new Fields("word", "count"));
+        }
+
+        @Override
+        public void prepare(Map<String, Object> topoConf, TopologyContext context) {
+            taskId = context.getThisTaskId();
+            sharedState = context.getSharedState().setStateKey("WordCountBolt");
+            if (sharedState == null) {
+                LOG.info("sharedState is null");
+            }
         }
     }
 }
