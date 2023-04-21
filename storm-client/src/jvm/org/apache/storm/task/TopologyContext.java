@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.apache.storm.daemon.worker.SharedCache;
 import org.apache.storm.generated.GlobalStreamId;
 import org.apache.storm.generated.Grouping;
 import org.apache.storm.generated.StormTopology;
@@ -77,16 +79,40 @@ public class TopologyContext extends WorkerTopologyContext implements IMetricsCo
                            Map<String, Object> executorData,
                            Map<Integer, Map<Integer, Map<String, IMetric>>> registeredMetrics,
                            AtomicBoolean openOrPrepareWasCalled,
-                           StormMetricRegistry metricRegistry) {
+                           StormMetricRegistry metricRegistry,
+                           SharedCache sharedState) {
         super(topology, topoConf, taskToComponent, componentToSortedTasks,
               componentToStreamToFields, stormId, codeDir, pidDir,
-              workerPort, workerTasks, defaultResources, userResources);
+              workerPort, workerTasks, defaultResources, userResources, sharedState);
         this.metricRegistry = metricRegistry;
         this.taskId = taskId;
         this.executorData = executorData;
         this.registeredMetrics = registeredMetrics;
         this.openOrPrepareWasCalled = openOrPrepareWasCalled;
         blobToLastKnownVersion = blobToLastKnownVersionShared;
+    }
+
+    public TopologyContext(StormTopology topology,
+                           Map<String, Object> topoConf,
+                           Map<Integer, String> taskToComponent,
+                           Map<String, List<Integer>> componentToSortedTasks,
+                           Map<String, Map<String, Fields>> componentToStreamToFields,
+                           Map<String, Long> blobToLastKnownVersionShared,
+                           String stormId,
+                           String codeDir,
+                           String pidDir,
+                           Integer taskId,
+                           Integer workerPort,
+                           List<Integer> workerTasks,
+                           Map<String, Object> defaultResources,
+                           Map<String, Object> userResources,
+                           Map<String, Object> executorData,
+                           Map<Integer, Map<Integer, Map<String, IMetric>>> registeredMetrics,
+                           AtomicBoolean openOrPrepareWasCalled,
+                           StormMetricRegistry metricRegistry) {
+        this(topology, topoConf, taskToComponent, componentToSortedTasks, componentToStreamToFields, blobToLastKnownVersionShared, stormId,
+                codeDir, pidDir, taskId, workerPort, workerTasks, defaultResources, userResources, executorData, registeredMetrics,
+                openOrPrepareWasCalled, metricRegistry, null);
     }
 
     @SuppressWarnings("checkstyle:AbbreviationAsWordInName")

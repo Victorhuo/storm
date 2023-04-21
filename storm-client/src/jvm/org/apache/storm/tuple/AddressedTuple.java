@@ -24,7 +24,7 @@ public final class AddressedTuple {
      */
     public static final int BROADCAST_DEST = -2;
     public final Tuple tuple;
-    public final int dest;
+    public int dest;
 
     public AddressedTuple(int dest, Tuple tuple) {
         this.dest = dest;

@@ -520,7 +520,7 @@ public class StormCommon {
             Map<String, Object> userResources = (Map<String, Object>) workerData.get(Constants.USER_SHARED_RESOURCES);
             return new WorkerTopologyContext(stormTopology, topoConf, taskToComponent, componentToSortedTasks,
                                              componentToStreamToFields, stormId, codeDir, pidDir, port, workerTasks, defaultResources,
-                                             userResources);
+                                             userResources, null);
         } catch (IOException e) {
             throw Utils.wrapInRuntime(e);
         }

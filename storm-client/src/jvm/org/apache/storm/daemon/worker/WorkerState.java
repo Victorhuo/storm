@@ -187,7 +187,7 @@ public class WorkerState {
         this.stateStorage = stateStorage;
         this.stormClusterState = stormClusterState;
         this.localExecutors =
-            new HashSet<>(readWorkerExecutors(assignmentId, port, getLocalAssignment(this.stormClusterState, topologyId))); // 在这初始化 executors
+            new HashSet<>(readWorkerExecutors(assignmentId, port, getLocalAssignment(this.stormClusterState, topologyId))); // 初始化executors
         this.isWorkerActive = new CountDownLatch(1);
         this.isTopologyActive = new AtomicBoolean(false);
         this.stormComponentToDebug = new AtomicReference<>();
@@ -579,6 +579,16 @@ public class WorkerState {
         }
         Integer targetTask = grouper.chooseTasks(tuple.tuple.getValues());
         LOG.info("Received tuple:tuple {}, and send to taskID: {}", tuple, targetTask);
+        tuple.dest = targetTask;
+        ConcurrentHashMap<String, ConcurrentHashMap<String, Object>> cache  = sharedState.getCache();
+        LOG.info("cache now: {}", cache);
+        ConcurrentHashMap<String, Object> wordCountCache = cache.get("WordCountBolt");
+        if (wordCountCache != null) {
+            List<Object> l = tuple.tuple.getValues();
+            if (l != null) {
+                LOG.info("and it's value now is {}", wordCountCache.get(l.get(0))); // null pointer exception
+            }
+        }
         return taskToExecutorQueue.get(targetTask);
     }
 
@@ -843,5 +853,9 @@ public class WorkerState {
 
     public interface ILocalTransferCallback {
         void transfer(ArrayList<AddressedTuple> tupleBatch);
+    }
+
+    public SharedCache getSharedState() {
+        return sharedState;
     }
 }

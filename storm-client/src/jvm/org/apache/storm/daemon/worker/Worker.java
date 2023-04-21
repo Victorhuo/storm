@@ -351,8 +351,8 @@ public class Worker implements Shutdownable, DaemonCommon {
     public void initComponentToExecutorGrouper() {
         for (Map.Entry<String, List<Integer>> entry : workerState.componentToSortedTasks.entrySet()) {
             List<Integer> localTaskList = new ArrayList<>();
-            for(Integer i:entry.getValue()) {
-                if(workerState.localTaskIds.contains(i)) {
+            for (Integer i:entry.getValue()) {
+                if (workerState.localTaskIds.contains(i)) {
                     localTaskList.add(i);
                 }
             }

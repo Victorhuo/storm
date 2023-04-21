@@ -58,20 +58,21 @@ public class WordCountTopology extends ConfigurableTopology {
         return submit(topologyName, conf, builder);
     }
 
-    public static class SplitSentence extends ShellBolt implements IRichBolt {
+    public static class SplitSentence extends BaseBasicBolt {
+    
+        public void execute(Tuple tuple, BasicOutputCollector collector) {
+            String sentence = tuple.getStringByField("word");
+            String[] words = sentence.split(" ");
 
-        public SplitSentence() {
-            super("python", "splitsentence.py");
+            for (String word : words) {
+                collector.emit(new Values(word));
+            }
         }
-
+        
         @Override
         public void declareOutputFields(OutputFieldsDeclarer declarer) {
             declarer.declare(new Fields("word"));
         }
 
-        @Override
-        public Map<String, Object> getComponentConfiguration() {
-            return null;
-        }
     }
 }

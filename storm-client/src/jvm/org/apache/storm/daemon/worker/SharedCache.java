@@ -17,4 +17,8 @@ public class SharedCache {
     public void remove(String name) {
         cache.remove(name);
     }
+
+    public ConcurrentHashMap<String, ConcurrentHashMap<String, Object>> getCache() {
+        return cache;
+    }
 }

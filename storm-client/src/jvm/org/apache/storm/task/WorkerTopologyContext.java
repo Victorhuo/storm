@@ -91,9 +91,28 @@ public class WorkerTopologyContext extends GeneralTopologyContext {
         Integer workerPort,
         List<Integer> workerTasks,
         Map<String, Object> defaultResources,
-        Map<String, Object> userResources) {
+        Map<String, Object> userResources,
+        SharedCache sharedState) {
         this(topology, topoConf, taskToComponent, componentToSortedTasks, componentToStreamToFields, stormId,
-             codeDir, pidDir, workerPort, workerTasks, defaultResources, userResources, null, null, null, null);
+             codeDir, pidDir, workerPort, workerTasks, defaultResources, userResources, null, null, null, sharedState);
+    }
+
+    public WorkerTopologyContext(
+            StormTopology topology,
+            Map<String, Object> topoConf,
+            Map<Integer, String> taskToComponent,
+            Map<String, List<Integer>> componentToSortedTasks,
+            Map<String, Map<String, Fields>> componentToStreamToFields,
+            String stormId,
+            String codeDir,
+            String pidDir,
+            Integer workerPort,
+            List<Integer> workerTasks,
+            Map<String, Object> defaultResources,
+            Map<String, Object> userResources
+    ) {
+        this(topology, topoConf, taskToComponent, componentToSortedTasks, componentToStreamToFields, stormId,
+                codeDir, pidDir, workerPort, workerTasks, defaultResources, userResources, null, null, null, null);
     }
 
     /**

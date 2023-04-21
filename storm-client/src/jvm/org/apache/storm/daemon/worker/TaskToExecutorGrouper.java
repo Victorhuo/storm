@@ -14,7 +14,7 @@ public class TaskToExecutorGrouper {
         if (val == null) {
             return 0;
         }
-        return Utils.toPositive(val.hashCode()) % numPartitions;
+        return Utils.toPositive(val.hashCode()) % numPartitions; // / 0 exception
     }
 
     public Integer chooseTasks(List<Object> values) {
