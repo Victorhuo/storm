@@ -349,14 +349,18 @@ public class Worker implements Shutdownable, DaemonCommon {
     }
 
     public void initComponentToExecutorGrouper() {
+        ArrayList<String> shareStateComponent = (ArrayList<String>) topologyConf.get("sharedStateComponent");
+        LOG.debug("bplan : {}", shareStateComponent);
         for (Map.Entry<String, List<Integer>> entry : workerState.componentToSortedTasks.entrySet()) {
-            List<Integer> localTaskList = new ArrayList<>();
-            for (Integer i:entry.getValue()) {
-                if (workerState.localTaskIds.contains(i)) {
-                    localTaskList.add(i);
+            if (shareStateComponent.contains(entry.getKey())) {
+                List<Integer> localTaskList = new ArrayList<>();
+                for (Integer i:entry.getValue()) {
+                    if (workerState.localTaskIds.contains(i)) {
+                        localTaskList.add(i);
+                    }
                 }
+                workerState.componentToExecutorGrouper.put(entry.getKey(), new TaskToExecutorGrouper(localTaskList));
             }
-            workerState.componentToExecutorGrouper.put(entry.getKey(), new TaskToExecutorGrouper(localTaskList));
         }
     }
 

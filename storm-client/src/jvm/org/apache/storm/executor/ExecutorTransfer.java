@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.storm.Config;
-import org.apache.storm.daemon.worker.TaskToExecutorGrouper;
 import org.apache.storm.daemon.worker.WorkerState;
 import org.apache.storm.serialization.KryoTupleSerializer;
 import org.apache.storm.task.WorkerTopologyContext;

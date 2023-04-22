@@ -67,7 +67,7 @@ public class RandomSentenceSpout extends BaseRichSpout {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields("sentence"));
+        declarer.declare(new Fields("word"));
     }
 
     // Add unique identifier to each tuple, which is helpful for debugging

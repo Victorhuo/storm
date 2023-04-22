@@ -12,14 +12,11 @@
 
 package org.apache.storm.starter;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
 import org.apache.storm.starter.bolt.WordCountBolt;
 import org.apache.storm.starter.spout.RandomSentenceSpout;
-import org.apache.storm.task.ShellBolt;
 import org.apache.storm.topology.BasicOutputCollector;
 import org.apache.storm.topology.ConfigurableTopology;
-import org.apache.storm.topology.IRichBolt;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.topology.base.BaseBasicBolt;
@@ -51,7 +48,9 @@ public class WordCountTopology extends ConfigurableTopology {
         String topologyName = "word-count";
 
         conf.setNumWorkers(3);
-
+        ArrayList<String> sharedStateComponent = new ArrayList<String>();
+        sharedStateComponent.add("count");
+        conf.put("sharedStateComponent", sharedStateComponent);
         if (args != null && args.length > 0) {
             topologyName = args[0];
         }

@@ -570,7 +570,7 @@ public class WorkerState {
     public JCQueue getLocalTargetQueue(AddressedTuple tuple) {
         String component = taskToComponent.get(tuple.dest);
         if (component == null) {
-            LOG.warn("tuple: {} can't find component", tuple);
+            return taskToExecutorQueue.get(tuple.dest);
         }
         TaskToExecutorGrouper grouper = componentToExecutorGrouper.get(component);
         if (grouper == null) {
@@ -578,7 +578,7 @@ public class WorkerState {
             return taskToExecutorQueue.get(tuple.dest);
         }
         Integer targetTask = grouper.chooseTasks(tuple.tuple.getValues());
-        LOG.info("Received tuple:tuple {}, and send to taskID: {}", tuple, targetTask);
+        LOG.debug("Received tuple:tuple {}, and send to taskID: {}", tuple, targetTask);
         tuple.dest = targetTask;
         ConcurrentHashMap<String, ConcurrentHashMap<String, Object>> cache  = sharedState.getCache();
         LOG.info("cache now: {}", cache);
