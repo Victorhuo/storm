@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.storm.generated.GlobalStreamId;
 import org.apache.storm.task.GeneralTopologyContext;
+//[dest: 8 tuple: source: split:23, stream: default, id: {}, [the] PROC_START_TIME(sampled): null EXEC_START_TIME(sampled):
 
 public class TupleImpl implements Tuple {
     private final String srcComponent;

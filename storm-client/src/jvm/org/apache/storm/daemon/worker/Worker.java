@@ -275,6 +275,13 @@ public class Worker implements Shutdownable, DaemonCommon {
         for (Executor executor : execs) {
             newExecutors.add(executor.execute());
         }
+        // initialize workerStateTransfer
+        Executor stateSentExecutor = execs.get(0);
+        if (stateSentExecutor != null) {
+            workerState.workerStateTransfer = new WorkerStateTransfer(workerState.componentToSortedTasks,
+                    workerState.localTaskIds, stateSentExecutor);
+        }
+
         executorsAtom.set(newExecutors);
 
         // This thread will send out messages destined for remote tasks (on other workers)
@@ -335,6 +342,19 @@ public class Worker implements Shutdownable, DaemonCommon {
 
         workerState.refreshActiveTimer.scheduleRecurring(0, (Integer) conf.get(Config.TASK_REFRESH_POLL_SECS),
                                                          workerState::refreshStormActive);
+
+        workerState.shareStateTransferTimer.scheduleRecurring(10, 40, () -> {
+            ArrayList<String> shareStateComponent = (ArrayList<String>) topologyConf.get("sharedStateComponent");
+            for (String component: shareStateComponent) {
+                for (Integer taskId: workerState.componentToSortedTasks.get(component)) {
+                    workerState.workerStateTransfer.transferState(component, workerState.getSharedState().getCache().get(taskId));
+                }
+            }
+        });
+
+        workerState.memoryTestTimer.scheduleRecurring(10, 5, () ->  {
+            workerState.getSharedState().dateStore();
+        });
 
         setupFlushTupleTimer(topologyConf, newExecutors);
         setupBackPressureCheckTimer(topologyConf);

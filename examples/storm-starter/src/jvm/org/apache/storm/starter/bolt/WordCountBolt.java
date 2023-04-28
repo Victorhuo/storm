@@ -15,6 +15,9 @@ package org.apache.storm.starter.bolt;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.storm.metric.api.CountMetric;
+import org.apache.storm.metric.api.MeanReducer;
+import org.apache.storm.metric.api.ReducedMetric;
 import org.apache.storm.starter.WordCountTopologyNode;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.BasicOutputCollector;
@@ -28,6 +31,8 @@ import org.slf4j.LoggerFactory;
 
 public class WordCountBolt extends BaseBasicBolt {
 
+    private transient CountMetric countMetric;
+    private transient ReducedMetric latencyMetric;
     private ConcurrentHashMap<String, Object> sharedState;
 
     private Integer taskId;
@@ -36,14 +41,26 @@ public class WordCountBolt extends BaseBasicBolt {
 
     @Override
     public void execute(Tuple tuple, BasicOutputCollector collector) {
-        String word = tuple.getString(0);
+        String word = tuple.getStringByField("word");
+        Integer count;
+        long startTime = System.currentTimeMillis();
+        if (tuple.contains("count")) {
+            count = tuple.getIntegerByField("count");
+            LOG.info("taskId get sharedData {},{}:{}", taskId, word, count);
+        } else {
+            this.countMetric.incr();
+            count = 1;
+        }
+
         Integer value = (Integer) sharedState.compute(word, (k, v) -> {
             if (v == null) {
-                return 1;
+                return count;
             } else {
-                return (Integer) v + 1;
+                return (Integer) v + count;
             }
         });
+        long latency = System.currentTimeMillis() - startTime;
+        this.latencyMetric.update(latency);
         LOG.info("taskID : {} get value of {} : {}", taskId, tuple, value);
 
         collector.emit(new Values(word, value));
@@ -51,13 +68,17 @@ public class WordCountBolt extends BaseBasicBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields("word", "count"));
+        declarer.declare(new Fields("word", "value"));
     }
 
     @Override
     public void prepare(Map<String, Object> topoConf, TopologyContext context) {
+        this.countMetric = new CountMetric();
+        this.latencyMetric = new ReducedMetric(new MeanReducer());
+        context.registerMetric("execute_count", countMetric, 10);
+        context.registerMetric("latency_metric", latencyMetric, 10);
         taskId = context.getThisTaskId();
-        sharedState = context.getSharedState().setStateKey("WordCountBolt");
+        sharedState = context.getSharedState().setStateKey(taskId);
         if (sharedState == null) {
             LOG.info("sharedState is null");
         }

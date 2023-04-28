@@ -122,7 +122,7 @@ public class WordCountTopologyNode {
         @Override
         public void prepare(Map<String, Object> topoConf, TopologyContext context) {
             taskId = context.getThisTaskId();
-            sharedState = context.getSharedState().setStateKey("WordCountBolt");
+            sharedState = context.getSharedState().setStateKey(taskId);
             if (sharedState == null) {
                 LOG.info("sharedState is null");
             }

@@ -13,6 +13,8 @@
 package org.apache.storm.starter;
 
 import java.util.ArrayList;
+
+import org.apache.storm.metric.LoggingMetricsConsumer;
 import org.apache.storm.starter.bolt.WordCountBolt;
 import org.apache.storm.starter.spout.RandomSentenceSpout;
 import org.apache.storm.topology.BasicOutputCollector;
@@ -38,12 +40,11 @@ public class WordCountTopology extends ConfigurableTopology {
 
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("spout", new RandomSentenceSpout(), 5);
+        builder.setSpout("spout", new RandomSentenceSpout(), 3);
 
-        builder.setBolt("split", new SplitSentence(), 8).shuffleGrouping("spout");
-        builder.setBolt("count", new WordCountBolt(), 12).fieldsGrouping("split", new Fields("word"));
+        builder.setBolt("count", new WordCountBolt(), 6).shuffleGrouping("spout");
 
-        conf.setDebug(true);
+        conf.setDebug(false);
 
         String topologyName = "word-count";
 
@@ -51,27 +52,27 @@ public class WordCountTopology extends ConfigurableTopology {
         ArrayList<String> sharedStateComponent = new ArrayList<String>();
         sharedStateComponent.add("count");
         conf.put("sharedStateComponent", sharedStateComponent);
+        conf.registerMetricsConsumer(LoggingMetricsConsumer.class);
         if (args != null && args.length > 0) {
             topologyName = args[0];
         }
         return submit(topologyName, conf, builder);
     }
-
-    public static class SplitSentence extends BaseBasicBolt {
-    
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            String sentence = tuple.getStringByField("word");
-            String[] words = sentence.split(" ");
-
-            for (String word : words) {
-                collector.emit(new Values(word));
-            }
-        }
-        
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer declarer) {
-            declarer.declare(new Fields("word"));
-        }
-
-    }
+    //    public static class SplitSentence extends BaseBasicBolt {
+    //
+    //        public void execute(Tuple tuple, BasicOutputCollector collector) {
+    //            String sentence = tuple.getStringByField("word");
+    //            String[] words = sentence.split(" ");
+    //
+    //            for (String word : words) {
+    //                collector.emit(new Values(word));
+    //            }
+    //        }
+    //
+    //        @Override
+    //        public void declareOutputFields(OutputFieldsDeclarer declarer) {
+    //            declarer.declare(new Fields("word"));
+    //        }
+    //
+    //    }
 }

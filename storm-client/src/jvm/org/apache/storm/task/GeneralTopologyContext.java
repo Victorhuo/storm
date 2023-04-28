@@ -214,4 +214,8 @@ public class GeneralTopologyContext implements JSONAware {
     public boolean doSanityCheck() {
         return doSanityCheck;
     }
+
+    public Map<String, Map<String, Fields>> getComponentFields() {
+        return componentToStreamToFields;
+    }
 }

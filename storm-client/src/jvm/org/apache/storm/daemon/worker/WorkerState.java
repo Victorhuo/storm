@@ -144,6 +144,11 @@ public class WorkerState {
     final StormTimer flushTupleTimer = mkHaltingTimer("flush-tuple-timer");
     final StormTimer userTimer = mkHaltingTimer("user-timer");
     final StormTimer backPressureCheckTimer = mkHaltingTimer("backpressure-check-timer");
+
+    final StormTimer shareStateTransferTimer = mkHaltingTimer("shareState-transfer-timer");
+
+    final StormTimer memoryTestTimer = mkHaltingTimer("memory-test-timer");
+
     private final WorkerTransfer workerTransfer;
     private final BackPressureTracker bpTracker;
     private final List<IWorkerHook> deserializedWorkerHooks;
@@ -156,7 +161,9 @@ public class WorkerState {
     private final StormMetricRegistry metricRegistry;
 
     private final SharedCache sharedState = new SharedCache();
-    final Map<String, TaskToExecutorGrouper> componentToExecutorGrouper = new HashMap<>();
+    public Map<String, TaskToExecutorGrouper> componentToExecutorGrouper = new HashMap<>();
+
+    public WorkerStateTransfer workerStateTransfer;
 
 
     public WorkerState(Map<String, Object> conf,
@@ -569,6 +576,9 @@ public class WorkerState {
 
     public JCQueue getLocalTargetQueue(AddressedTuple tuple) {
         String component = taskToComponent.get(tuple.dest);
+        if (tuple.getTuple().getSourceStreamId() == "sharestream") {
+            LOG.info("Received tuple:tuple {}, {}", tuple.dest, tuple.getTuple());
+        }
         if (component == null) {
             return taskToExecutorQueue.get(tuple.dest);
         }
@@ -578,11 +588,11 @@ public class WorkerState {
             return taskToExecutorQueue.get(tuple.dest);
         }
         Integer targetTask = grouper.chooseTasks(tuple.tuple.getValues());
-        LOG.debug("Received tuple:tuple {}, and send to taskID: {}", tuple, targetTask);
+
         tuple.dest = targetTask;
-        ConcurrentHashMap<String, ConcurrentHashMap<String, Object>> cache  = sharedState.getCache();
-        LOG.info("cache now: {}", cache);
-        ConcurrentHashMap<String, Object> wordCountCache = cache.get("WordCountBolt");
+        ConcurrentHashMap<Integer, ConcurrentHashMap<String, Object>> cache  = sharedState.getCache();
+        //        LOG.info("cache now: {}", cache);
+        ConcurrentHashMap<String, Object> wordCountCache = cache.get(targetTask);
         if (wordCountCache != null) {
             List<Object> l = tuple.tuple.getValues();
             if (l != null) {

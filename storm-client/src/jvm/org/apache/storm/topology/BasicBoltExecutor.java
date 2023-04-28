@@ -13,9 +13,12 @@
 package org.apache.storm.topology;
 
 import java.util.Map;
+import java.util.Objects;
+
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.TupleImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +38,7 @@ public class BasicBoltExecutor implements IRichBolt {
     }
 
 
+    // 在这调用prepare和execute方法
     @Override
     public void prepare(Map<String, Object> topoConf, TopologyContext context, OutputCollector collector) {
         bolt.prepare(topoConf, context);
@@ -46,7 +50,9 @@ public class BasicBoltExecutor implements IRichBolt {
         collector.setContext(input);
         try {
             bolt.execute(input, collector);
-            collector.getOutputter().ack(input);
+            if (!Objects.equals(input.getSourceStreamId(), "sharestream")) {
+                collector.getOutputter().ack(input);
+            }
         } catch (FailedException e) {
             if (e instanceof ReportedFailedException) {
                 collector.reportError(e);
