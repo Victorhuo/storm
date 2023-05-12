@@ -12,14 +12,11 @@
 
 package org.apache.storm.starter;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
 import org.apache.storm.starter.bolt.WordCountBolt;
 import org.apache.storm.starter.spout.RandomSentenceSpout;
-import org.apache.storm.task.ShellBolt;
 import org.apache.storm.topology.BasicOutputCollector;
 import org.apache.storm.topology.ConfigurableTopology;
-import org.apache.storm.topology.IRichBolt;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.topology.base.BaseBasicBolt;
@@ -43,35 +40,19 @@ public class WordCountTopology extends ConfigurableTopology {
 
         builder.setSpout("spout", new RandomSentenceSpout(), 5);
 
-        builder.setBolt("split", new SplitSentence(), 8).shuffleGrouping("spout");
-        builder.setBolt("count", new WordCountBolt(), 12).fieldsGrouping("split", new Fields("word"));
+        builder.setBolt("count", new WordCountBolt(), 12).fieldsGrouping("spout", new Fields("word"));
 
         conf.setDebug(true);
 
         String topologyName = "word-count";
 
         conf.setNumWorkers(3);
-
+        ArrayList<String> sharedStateComponent = new ArrayList<String>();
+        sharedStateComponent.add("count");
+        conf.put("sharedStateComponent", sharedStateComponent);
         if (args != null && args.length > 0) {
             topologyName = args[0];
         }
         return submit(topologyName, conf, builder);
-    }
-
-    public static class SplitSentence extends ShellBolt implements IRichBolt {
-
-        public SplitSentence() {
-            super("python", "splitsentence.py");
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer declarer) {
-            declarer.declare(new Fields("word"));
-        }
-
-        @Override
-        public Map<String, Object> getComponentConfiguration() {
-            return null;
-        }
     }
 }

@@ -12,10 +12,16 @@
 
 package org.apache.storm.starter.spout;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -29,6 +35,8 @@ import org.slf4j.LoggerFactory;
 public class RandomSentenceSpout extends BaseRichSpout {
     private static final Logger LOG = LoggerFactory.getLogger(RandomSentenceSpout.class);
 
+    private List<String> words;
+    private int index = 0;
     SpoutOutputCollector collector;
     Random rand;
 
@@ -36,21 +44,26 @@ public class RandomSentenceSpout extends BaseRichSpout {
     @Override
     public void open(Map<String, Object> conf, TopologyContext context, SpoutOutputCollector collector) {
         this.collector = collector;
-        rand = new Random();
+        this.words = new ArrayList<>();
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader("path_to_your_file.txt")); // replace with your file path
+            String line;
+            while ((line = reader.readLine()) != null) {
+                words.add(line);
+            }
+            reader.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     @Override
     public void nextTuple() {
-        Utils.sleep(100);
-        String[] sentences = new String[]{
-            sentence("the cow jumped over the moon"), sentence("an apple a day keeps the doctor away"),
-            sentence("four score and seven years ago"), sentence("snow white and the seven dwarfs"), sentence("i am at two with nature")
-        };
-        final String sentence = sentences[rand.nextInt(sentences.length)];
-
-        LOG.debug("Emitting tuple: {}", sentence);
-
-        collector.emit(new Values(sentence));
+        if (index < words.size()) {
+            this.collector.emit(new Values(words.get(index)));
+            index++;
+        }
     }
 
     protected String sentence(String input) {
