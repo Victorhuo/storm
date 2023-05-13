@@ -332,6 +332,10 @@ public class Worker implements Shutdownable, DaemonCommon {
         workerState.refreshActiveTimer.scheduleRecurring(0, (Integer) conf.get(Config.TASK_REFRESH_POLL_SECS),
                                                          workerState::refreshStormActive);
 
+        workerState.memoryTestTimer.scheduleRecurring(10, 5, () ->  {
+            workerState.getSharedState().dateStore();
+        });
+
         setupFlushTupleTimer(topologyConf, newExecutors);
         setupBackPressureCheckTimer(topologyConf);
 

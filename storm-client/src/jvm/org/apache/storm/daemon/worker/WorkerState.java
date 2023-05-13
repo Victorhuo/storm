@@ -144,6 +144,8 @@ public class WorkerState {
     final StormTimer flushTupleTimer = mkHaltingTimer("flush-tuple-timer");
     final StormTimer userTimer = mkHaltingTimer("user-timer");
     final StormTimer backPressureCheckTimer = mkHaltingTimer("backpressure-check-timer");
+
+    final StormTimer memoryTestTimer = mkHaltingTimer("memory-test-timer");
     private final WorkerTransfer workerTransfer;
     private final BackPressureTracker bpTracker;
     private final List<IWorkerHook> deserializedWorkerHooks;
@@ -154,6 +156,7 @@ public class WorkerState {
     private final Collection<IAutoCredentials> autoCredentials;
     private final AtomicReference<Credentials> credentialsAtom;
     private final StormMetricRegistry metricRegistry;
+    private final SharedCache sharedState = new SharedCache();
 
     public WorkerState(Map<String, Object> conf,
             IContext mqContext,
@@ -621,7 +624,7 @@ public class WorkerState {
             return new WorkerTopologyContext(systemTopology, topologyConf, taskToComponent, componentToSortedTasks,
                                              componentToStreamToFields, topologyId, codeDir, pidDir, port, localTaskIds,
                                              defaultSharedResources,
-                                             userSharedResources, cachedTaskToNodePort, assignmentId, cachedNodeToHost);
+                                             userSharedResources, cachedTaskToNodePort, assignmentId, cachedNodeToHost, sharedState);
         } catch (IOException e) {
             throw Utils.wrapInRuntime(e);
         }
@@ -815,6 +818,10 @@ public class WorkerState {
 
     public StormMetricRegistry getMetricRegistry() {
         return metricRegistry;
+    }
+
+    public SharedCache getSharedState() {
+        return sharedState;
     }
 
     public interface ILocalTransferCallback {

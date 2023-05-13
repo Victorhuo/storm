@@ -21,7 +21,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -34,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 public class RandomSentenceSpout extends BaseRichSpout {
     private static final Logger LOG = LoggerFactory.getLogger(RandomSentenceSpout.class);
-
     private List<String> words;
     private int index = 0;
     SpoutOutputCollector collector;
@@ -46,7 +44,8 @@ public class RandomSentenceSpout extends BaseRichSpout {
         this.collector = collector;
         this.words = new ArrayList<>();
         try {
-            BufferedReader reader = new BufferedReader(new FileReader("path_to_your_file.txt")); // replace with your file path
+            BufferedReader reader = new BufferedReader(new FileReader(
+                    "/home/victorhuo/workspace/storm/twitterData.txt"));
             String line;
             while ((line = reader.readLine()) != null) {
                 words.add(line);

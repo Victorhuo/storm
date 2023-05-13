@@ -255,7 +255,8 @@ public class Task {
             executor.getSharedExecutorData(),
             executor.getIntervalToTaskToMetricToRegistry(),
             executor.getOpenOrPrepareWasCalled(),
-            workerData.getMetricRegistry());
+            workerData.getMetricRegistry(),
+            workerData.getSharedState());
     }
 
     private Object mkTaskObject() {
