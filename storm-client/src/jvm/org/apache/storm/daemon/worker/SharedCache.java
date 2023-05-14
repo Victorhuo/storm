@@ -59,7 +59,7 @@ public class SharedCache {
         }
         tick.add(memoryNum);
         data.add(tick);
-        if (index == 60) {
+        if (index == 12) {
             writeToFile(data, "/home/victorhuo/workspace/storm/output.txt");
             data.clear();
             index = 0;
